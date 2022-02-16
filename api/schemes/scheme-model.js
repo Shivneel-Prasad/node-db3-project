@@ -1,22 +1,20 @@
 const db = require('../../data/db-config')
 
-async function find() { // EXERCISE A
-  const rows = await db('schemes as sch')
-    .leftJoin('steps as s', 'sch.scheme_id', 'step.scheme_id')
-    .select('sch.*')
-    .count('step.step_id as number_of_steps')
-    .groupBy('sch.scheme_id')
-    .orderBy('sch.scheme_id', 'ASC')
-  console.log(rows)
-  return rows
+function find() { // EXERCISE A
+  return db('schemes as sc')
+  .select('sc.*')
+  .leftJoin('steps as st', 'sc.scheme_id', 'st.scheme_id')
+  .count('st.step_id as number_of_steps')
+  .groupBy('sc.scheme_id')
+  .orderBy('sc.scheme_id', 'asc')
 }
 
 async function findById(scheme_id) { // EXERCISE B
   const rows = await db('schemes as sch')
-    .leftJoin('steps as st', 'sch.scheme_id', 'step.scheme_id')
+    .leftJoin('steps as st', 'sch.scheme_id', 'st.scheme_id')
     .where('sch.scheme_id', scheme_id)
-    .select('sch.*', 'sch.scheme_name', 'sch.scheme_id')
-    .orderBy('step.step_number', 'ASC')
+    .select('st.*', 'sch.scheme_name', 'sch.scheme_id')
+    .orderBy('st.step_number', 'ASC')
 
     const results = {
       scheme_id: rows[0].scheme_id,
@@ -50,21 +48,22 @@ async function findSteps(scheme_id) { // EXERCISE C
     }
 }
 
-async function add(scheme) { // EXERCISE D
-  await db('schemes').insert(scheme)
-  return db('schemes').where('scheme_name', scheme.scheme_name).first();
+function add(scheme) { // EXERCISE D
+  return db('schemes').insert(scheme)
+  .then(([scheme_id]) => {
+    return db('schemes').where('scheme_id', scheme_id).first()
+  })
 }
 
 function addStep(scheme_id, step) { // EXERCISE E
   return db('steps').insert({ ...step, scheme_id })
     .then(() => {
       return db('steps as st')
-        .join('schemes as sc', 'sc.scheme_id', 'st.scheme_id')
+        .join('schemes as sch', 'sch.scheme_id', 'st.scheme_id')
         .select('step_id', 'step_number', 'instructions', "scheme_name")
-        .where('sc.scheme_id', scheme_id)
         .orderBy('step_number', 'ASC')
+        .where('sch.scheme_id', scheme_id)
     })
-
 }
 
 module.exports = {
